@@ -18,16 +18,17 @@ import {
 	signedTypeData,
 	getAddressFromSigner,
 	splitSignature,
+	getSigner,
 } from "@/ethers.service";
 import { ethers } from "ethers";
-import { lensAbi } from "../constants";
-
+import { lensAbi, LENS_FOLLOW_NFT_ABI } from "../constants";
 import {
 	RecommendedProfilesDocument,
 	CreateFollowTypedDataDocument,
+	CreateUnfollowTypedDataDocument,
 	FollowRequest,
+	UnfollowRequest,
 } from "../constants/generated";
-// import { lensHub } from "../../lens-hub";
 
 const APIURL = "https://api-mumbai.lens.dev/";
 
@@ -273,7 +274,11 @@ export default function useLens() {
 		return result.data!.createFollowTypedData;
 	};
 
-	const follow = async (profileId, _address, signer) => {
+	const follow = async (
+		profileId: string,
+		_address: `0x${string}`,
+		signer: any
+	) => {
 		const address = _address;
 		console.log("follow: address", address);
 		const client = await login(address, signer);
@@ -322,6 +327,71 @@ export default function useLens() {
 		return tx.hash;
 	};
 
+	const createUnfollowTypedData = async (
+		request: UnfollowRequest,
+		client: any
+	) => {
+		const result = await client.mutate({
+			mutation: CreateUnfollowTypedDataDocument,
+			variables: {
+				request,
+			},
+		});
+
+		return result.data!.createUnfollowTypedData;
+	};
+
+	const unfollow = async (
+		profileID: string,
+		_address: `0x${string}`,
+		signer: any
+	) => {
+		const address = getAddressFromSigner();
+		console.log("unfollow: address", address);
+
+		const client = await login(_address, signer);
+		console.log("Client", client);
+
+		const result = await createUnfollowTypedData(
+			{ profile: profileID },
+			client
+		);
+		console.log("unfollow: result", result);
+
+		const typedData = result.typedData;
+		console.log("unfollow: typedData", typedData);
+
+		const signature = await signedTypeData(
+			typedData.domain,
+			typedData.types,
+			typedData.value
+		);
+		console.log("unfollow: signature", signature);
+
+		const { v, r, s } = splitSignature(signature);
+
+		// load up the follower nft contract
+		const followNftContract = new ethers.Contract(
+			typedData.domain.verifyingContract,
+			LENS_FOLLOW_NFT_ABI,
+			signer
+		);
+
+		const sig = {
+			v,
+			r,
+			s,
+			deadline: typedData.value.deadline,
+		};
+
+		// force the tx to send
+		const tx = await followNftContract.burnWithSig(
+			typedData.value.tokenId,
+			sig
+		);
+		console.log("follow: tx hash", tx.hash);
+	};
+
 	return {
 		login,
 		createProfile,
@@ -332,5 +402,6 @@ export default function useLens() {
 		getProfileId,
 		getRecommendedProfilesRequest,
 		follow,
+		unfollow,
 	};
 }
