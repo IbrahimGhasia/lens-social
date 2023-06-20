@@ -1,17 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useLens from "../hooks/useLens";
-import { useAccount } from "wagmi";
-import { useSigner } from "wagmi";
 import Link from "next/link";
 
 export default function IndexPage() {
-	const { address } = useAccount();
-	const { data: signer } = useSigner();
-	const { profileExists, createProfile } = useLens();
+	const { profileExists } = useLens();
 
-	const [handleName, setHandleName] = useState<String>();
-	const [profileExist, setProfileExist] = useState<Boolean>(false);
+	const [handleName, setHandleName] = useState("");
+	const [profileExist, setProfileExist] = useState(false);
 
 	const handleCheckProfileExists = async () => {
 		const res = await profileExists(handleName);
@@ -19,16 +15,6 @@ export default function IndexPage() {
 		if (res === false) {
 			alert("Profile does not exist");
 		}
-	};
-
-	const handleCreateNewProfile = async () => {
-		console.log("Hello");
-		if (!address) {
-			alert("Please connect your wallet");
-			return;
-		}
-		const res = await createProfile(handleName + ".test", address, signer);
-		console.log(res);
 	};
 
 	return (
@@ -49,17 +35,6 @@ export default function IndexPage() {
 				>
 					Check
 				</button>
-
-				{!profileExist && (
-					<div className="mt-5">
-						<button
-							className="ml-5 w-44 bg-yellow-500 text-white border-2 p-2 rounded-full"
-							onClick={handleCreateNewProfile}
-						>
-							Create a new profile
-						</button>
-					</div>
-				)}
 
 				{profileExist && (
 					<div>

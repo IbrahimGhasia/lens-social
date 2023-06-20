@@ -18,6 +18,7 @@ import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { polygon, polygonMumbai } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
+import Link from "next/link";
 
 const { chains, provider } = configureChains(
 	[polygon, polygonMumbai],
@@ -46,7 +47,21 @@ export default function RootLayout({
 			<body>
 				<WagmiConfig client={wagmiClient}>
 					<RainbowKitProvider chains={chains}>
-						<div className="p-3 flex justify-end">
+						<div className="p-3 flex justify-end items-center">
+							<ul className="flex gap-5 mr-5 text-xl text-blue-500">
+								<Link href="/">
+									<li>Home</li>
+								</Link>
+								<Link href="/IndexPage">
+									<li>Check Profile Exists</li>
+								</Link>
+								<Link href="/NewProfile">
+									<li>Create New Profile</li>
+								</Link>
+								<Link href="/ProfilePage">
+									<li>Profile</li>
+								</Link>
+							</ul>
 							<ConnectButton />
 						</div>
 						{children}

@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useLens from "../hooks/useLens";
 import { useAccount } from "wagmi";
 import { useSigner } from "wagmi";
 
 export default function ProfilePage() {
-	const { getProfile, uploadPost, getPosts, getProfileId } = useLens();
+	const { getProfile, uploadPost, getPosts, getProfileId, createComment } =
+		useLens();
 	const [handleName, setHandleName] = useState("");
 	const [profileId, setProfileId] = useState("");
 	const [profile, setProfile] = useState<any>();
@@ -44,6 +45,7 @@ export default function ProfilePage() {
 		);
 
 		console.log(res);
+		alert("Post created successfully");
 	};
 
 	const handleGetPosts = async () => {
@@ -51,6 +53,21 @@ export default function ProfilePage() {
 		const res = await getPosts(profileId);
 		setPosts(res);
 		console.log(posts);
+	};
+
+	const handleCreateComment = async (profileID: string, postID: string) => {
+		if (!address) return;
+		if (!signer) return;
+
+		const res = await createComment(
+			profileId,
+			address,
+			signer,
+			postID,
+			"Hi",
+			"Nice post"
+		);
+		console.log("Final res", res);
 	};
 
 	return (
@@ -82,10 +99,15 @@ export default function ProfilePage() {
 							// />
 
 							<img
-								src={profile.picture.original.url}
-								width={70}
-								height={100}
+								className="h-48 w-48 rounded-full"
+								src={profile.picture?.original.url}
 							/>
+
+							// <img
+							// 	src={profile.picture.original.url}
+							// 	width={70}
+							// 	height={100}
+							// />
 						)}
 
 						<li>Profile ID: {profile.id}</li>
@@ -96,6 +118,7 @@ export default function ProfilePage() {
 							<li>Posts : {profile.stats.totalPosts}</li>
 						</ul>
 					</ul>
+					{/* <Profile props={profile} /> */}
 					<div className="mt-5 flex flex-col">
 						<h1 className="text-3xl">Create New Post</h1>
 						<label className="">Title</label>
@@ -137,6 +160,16 @@ export default function ProfilePage() {
 											{post.metadata.name}
 										</h1>
 										<h1>{post.metadata.content}</h1>
+										<button
+											onClick={() =>
+												handleCreateComment(
+													profileId,
+													post.id
+												)
+											}
+										>
+											Create a comment
+										</button>
 									</div>
 								))}
 						</div>

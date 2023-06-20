@@ -1,12 +1,12 @@
 "use client";
-import { Signer } from "ethers";
 import useLens from "./hooks/useLens";
 import { useSigner, useAccount } from "wagmi";
-import { get } from "http";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Profile from "./components/Profile";
 
 export default function Home() {
 	const { getRecommendedProfilesRequest, follow, unfollow } = useLens();
+	const [profiles, setProfiles] = useState([{}]);
 	const { address } = useAccount();
 	const { data: signer } = useSigner();
 
@@ -15,8 +15,9 @@ export default function Home() {
 	}, []);
 
 	const getProfiles = async () => {
-		const profiles = await getRecommendedProfilesRequest();
-		// console.log(profiles);
+		const res = await getRecommendedProfilesRequest();
+		setProfiles(res);
+		console.log(res);
 	};
 
 	const handleFollow = async () => {
@@ -32,13 +33,22 @@ export default function Home() {
 	return (
 		<div>
 			<h1 className="text-center text-3xl">Lens Social</h1>
-			<button className="border-2 p-2" onClick={handleFollow}>
+			{/* <button className="border-2 p-2" onClick={handleFollow}>
 				Follow
 			</button>
 
 			<button className="border-2 p-2" onClick={handleUnFollow}>
 				UnFollow
-			</button>
+			</button> */}
+			{profiles.length > 0 ? (
+				<div className="px-20">
+					{profiles.map((profile, index) => (
+						<Profile key={index} props={profile} />
+					))}
+				</div>
+			) : (
+				<p>Loading profiles ...</p>
+			)}
 		</div>
 	);
 }
