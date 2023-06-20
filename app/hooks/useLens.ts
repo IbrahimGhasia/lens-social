@@ -14,9 +14,20 @@ import { GET_PUBLICATIONS } from "../constants/graphql/GetPost";
 import { LENS_PROFILE_EXISTS } from "../constants/graphql/GetProfileId";
 import { useProvider } from "wagmi";
 import { Signer } from "ethers";
-import { signedTypeData } from "@/ethers.service";
+import {
+	signedTypeData,
+	getAddressFromSigner,
+	splitSignature,
+} from "@/ethers.service";
 import { ethers } from "ethers";
 import { lensAbi } from "../constants";
+
+import {
+	RecommendedProfilesDocument,
+	CreateFollowTypedDataDocument,
+	FollowRequest,
+} from "../constants/generated";
+// import { lensHub } from "../../lens-hub";
 
 const APIURL = "https://api-mumbai.lens.dev/";
 
@@ -35,6 +46,7 @@ export default function useLens() {
 			},
 		});
 		console.log("Login Successful", response);
+		console.log(signer);
 		const signature = await signer.signMessage(
 			response.data.challenge.text
 		);
@@ -64,6 +76,7 @@ export default function useLens() {
 			// Call the next link in the middleware chain.
 			return forward(operation);
 		});
+
 		return new ApolloClient({
 			link: authLink.concat(httpLink), // Chain it with the HttpLink
 			cache: new InMemoryCache(),
@@ -195,7 +208,7 @@ export default function useLens() {
 			},
 		});
 		console.log("response", response);
-		return response.data;
+		return response.data.publications.items;
 	};
 
 	const profileExists = async (handle: string) => {
@@ -236,6 +249,79 @@ export default function useLens() {
 		return response.data.profile;
 	};
 
+	const getRecommendedProfilesRequest = async () => {
+		const result = await apolloClient.query({
+			query: RecommendedProfilesDocument,
+		});
+
+		return result.data.recommendedProfiles;
+	};
+
+	const createFollowTypedData = async (
+		request: FollowRequest,
+		client: any
+	) => {
+		const result = await client.mutate({
+			mutation: CreateFollowTypedDataDocument,
+			variables: {
+				request,
+			},
+		});
+
+		console.log("Result", result);
+
+		return result.data!.createFollowTypedData;
+	};
+
+	const follow = async (profileId, _address, signer) => {
+		const address = _address;
+		console.log("follow: address", address);
+		const client = await login(address, signer);
+
+		const result = await createFollowTypedData(
+			{
+				follow: [
+					{
+						profile: profileId,
+					},
+				],
+			},
+			client
+		);
+		console.log("follow: result", result);
+
+		const typedData = result.typedData;
+		console.log("follow: typedData", typedData);
+
+		const signature = await signedTypeData(
+			typedData.domain,
+			typedData.types,
+			typedData.value
+		);
+		console.log("follow: signature", signature);
+
+		const { v, r, s } = splitSignature(signature);
+
+		const lensHub = new ethers.Contract(
+			"0x60Ae865ee4C725cd04353b5AAb364553f56ceF82",
+			lensAbi,
+			signer
+		);
+		const tx = await lensHub.followWithSig({
+			follower: getAddressFromSigner(),
+			profileIds: typedData.value.profileIds,
+			datas: typedData.value.datas,
+			sig: {
+				v,
+				r,
+				s,
+				deadline: typedData.value.deadline,
+			},
+		});
+		console.log("follow: tx hash", tx.hash);
+		return tx.hash;
+	};
+
 	return {
 		login,
 		createProfile,
@@ -244,5 +330,7 @@ export default function useLens() {
 		getPosts,
 		profileExists,
 		getProfileId,
+		getRecommendedProfilesRequest,
+		follow,
 	};
 }

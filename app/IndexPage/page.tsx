@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useLens from "../hooks/useLens";
 import { useAccount } from "wagmi";
 import { useSigner } from "wagmi";
@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function IndexPage() {
 	const { address } = useAccount();
 	const { data: signer } = useSigner();
-	const { profileExists, login } = useLens();
+	const { profileExists, createProfile } = useLens();
 
 	const [handleName, setHandleName] = useState<String>();
 	const [profileExist, setProfileExist] = useState<Boolean>(false);
@@ -21,20 +21,20 @@ export default function IndexPage() {
 		}
 	};
 
-	const handleLogin = async () => {
+	const handleCreateNewProfile = async () => {
+		console.log("Hello");
 		if (!address) {
 			alert("Please connect your wallet");
 			return;
 		}
-
-		const res = await login(address, signer);
-		console.log("Result", res);
+		const res = await createProfile(handleName + ".test", address, signer);
+		console.log(res);
 	};
 
 	return (
 		<div>
 			<h1 className="text-center mt-5 text-4xl">
-				Login to your Lens Profile
+				Check if your lens profile exists or not.
 			</h1>
 			<div className="mt-5">
 				<label className="mx-5">Enter your lens handle</label>
@@ -50,14 +50,25 @@ export default function IndexPage() {
 					Check
 				</button>
 
+				{!profileExist && (
+					<div className="mt-5">
+						<button
+							className="ml-5 w-44 bg-yellow-500 text-white border-2 p-2 rounded-full"
+							onClick={handleCreateNewProfile}
+						>
+							Create a new profile
+						</button>
+					</div>
+				)}
+
 				{profileExist && (
 					<div>
+						<h1 className="text-3xl text-green-500 p-5">
+							Profile Exists
+						</h1>
 						<Link href={"/ProfilePage"}>
-							<button
-								className="ml-5 w-44 bg-green-500 mt-5 text-white border-2 p-2 rounded-full"
-								onClick={handleLogin}
-							>
-								Login to your profile
+							<button className="ml-5 w-44 bg-green-500 text-white border-2 p-2 rounded-full">
+								Go to Profile
 							</button>
 						</Link>
 					</div>
